@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Talent Stream - Passwordless Login</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f4f8;
+    margin: 0; padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .container {
+    background: #fff;
+    max-width: 400px;
+    width: 100%;
+    border-radius: 18px;
+    padding: 25px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  }
+  h2 {
+    margin-top: 0;
+    color: #0077ff;
+    text-align: center;
+  }
+  input[type="email"] {
+    width: 100%;
+    padding: 14px 10px;
+    margin: 12px 0;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+  }
+  button {
+    width: 100%;
+    background: #0077ff;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #005fcc;
+  }
+  #dashboard {
+    display: none;
+    text-align: center;
+  }
+  #dashboard p {
+    font-size: 18px;
+    color: #333;
+  }
+  #logoutBtn {
+    margin-top: 20px;
+    background: #cc0000;
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="login-container">
+  <h2>Login via Email Link</h2>
+  <input type="email" id="emailInput" placeholder="Enter your email" required />
+  <button id="sendLinkBtn">Send Login Link</button>
+</div>
+
+<div class="container" id="dashboard">
+  <h2>Welcome!</h2>
+  <p id="userEmail"></p>
+  <button id="logoutBtn">Logout</button>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+  import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDdVmJMZpbcWqFSr0QiFYtJSPL9vWbm8oU",
+    authDomain: "talent-stream-34dea.firebaseapp.com",
+    projectId: "talent-stream-34dea",
+    storageBucket: "talent-stream-34dea.firebasestorage.app",
+    messagingSenderId: "37281663822",
+    appId: "1:37281663822:web:5aaf7f6e530c670b5f6c1f",
+    measurementId: "G-4KCHV37B2B"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  getAnalytics(app);
+  const auth = getAuth();
+
+  const actionCodeSettings = {
+    url: window.location.origin,
+    handleCodeInApp: true,
+  };
+
+  const loginContainer = document.getElementById('login-container');
+  const dashboard = document.getElementById('dashboard');
+  const emailInput = document.getElementById('emailInput');
+  const sendLinkBtn = document.getElementById('sendLinkBtn');
+  const userEmailEl = document.getElementById('userEmail');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  sendLinkBtn.addEventListener('click', async () => {
+    const email = emailInput.value.trim();
+    if (!email) {
+      alert('Please enter your email.');
+      return;
+    }
+    try {
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem('emailForSignIn', email);
+      alert('Login link sent! Check your email.');
+      emailInput.value = '';
+    } catch (error) {
+      alert('Error sending email link: ' + error.message);
+    }
+  });
+
+  // Check if the URL contains the sign-in link
+  if (isSignInWithEmailLink(auth, window.location.href)) {
+    let email = window.localStorage.getItem('emailForSignIn');
+    if (!email) {
+      email = window.prompt('Please provide your email for confirmation');
+    }
+    signInWithEmailLink(auth, email, window.location.href)
+      .then(() => {
+        showDashboard(email);
+        window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
+      })
+      .catch((error) => {
+        alert('Error signing in: ' + error.message);
+      });
+  }
+
+  function showDashboard(email) {
+    loginContainer.style.display = 'none';
+    dashboard.style.display = 'block';
+    userEmailEl.textContent = 'Logged in as: ' + email;
+  }
+
+  logoutBtn.addEventListener('click', () => {
+    signOut(auth).then(() => {
+      dashboard.style.display = 'none';
+      loginContainer.style.display = 'block';
+      alert('Logged out successfully.');
+    });
+  });
+</script>
+
+</body>
+</html>
